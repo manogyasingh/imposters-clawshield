@@ -5,6 +5,8 @@ openai
 Pillow
 reportlab
 python-dotenv
-np
+numpy
 sarvamai
 audio-recorder-streamlit
+fastapi
+uvicorn

@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ClawShield Intent",
+  "description": "Structured intent object the agent MUST produce before executing any tool plan.",
+  "type": "object",
+  "required": ["goal", "input_document", "requested_actions", "output_destination"],
+  "properties": {
+    "goal": {
+      "type": "string",
+      "enum": ["fill_form", "analyze_form", "extract_profile"],
+      "description": "High-level intent category"
+    },
+    "input_document": {
+      "type": "string",
+      "description": "Path to the PDF inside workspace/forms/inbox/"
+    },
+    "data_sources": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Paths to profile/data files under workspace/data/profile/"
+    },
+    "requested_actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["analyze_form", "extract_profile_data", "fill_pdf", "save_output", "transcribe_audio"]
+      },
+      "description": "Ordered list of tool actions the agent plans to take"
+    },
+    "output_destination": {
+      "type": "string",
+      "description": "Directory or path under workspace/forms/outbox/"
+    },
+    "forbidden_actions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["email", "upload", "read_sensitive_dirs", "write_outside_outbox", "exec"],
+      "description": "Actions that must never be attempted"
+    }
+  },
+  "additionalProperties": false
+}

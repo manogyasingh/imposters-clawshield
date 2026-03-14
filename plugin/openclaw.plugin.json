@@ -1,0 +1,20 @@
+{
+  "id": "clawshield",
+  "name": "ClawShield",
+  "description": "Intent-aware PDF form-filling assistant with policy enforcement",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "workerUrl": {
+        "type": "string",
+        "default": "http://127.0.0.1:8100",
+        "description": "URL of the Python worker service"
+      },
+      "workspacePath": {
+        "type": "string",
+        "description": "Absolute path to the workspace directory"
+      }
+    }
+  }
+}

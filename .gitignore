@@ -1,0 +1,50 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.venv/
+venv/
+env/
+*.whl
+
+# Node / TypeScript
+node_modules/
+plugin/dist/
+plugin/node_modules/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated PDFs
+filled_form.pdf
+
+# Workspace runtime data
+workspace/data/
+workspace/forms/inbox/
+workspace/forms/outbox/
+workspace/forms/staged/
+workspace/logs/
+
+# Misc
+*.log
+*.pid
+*.seed
+.cache/

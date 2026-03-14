@@ -1,0 +1,26 @@
+{
+  "name": "@clawshield/plugin",
+  "version": "1.0.0",
+  "description": "ClawShield OpenClaw plugin — intent-aware PDF form filling with policy enforcement",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "openclaw.plugin.json"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.48"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
