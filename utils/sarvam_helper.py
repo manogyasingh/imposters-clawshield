@@ -106,11 +106,11 @@ def transcribe_audio_bytes(audio_bytes: bytes, api_key: str, language: str = "hi
 
 
 def clean_transcribed_value(
-    raw_text: str, 
-    field_label: str, 
-    api_base: str = "https://openrouter.ai/api/v1",
+    raw_text: str,
+    field_label: str,
+    api_base: str = None,
     api_key: str = None,
-    model: str = "google/gemini-2.0-flash-001"
+    model: str = None,
 ) -> str:
     """
     Clean and format the transcribed text based on the field label using an LLM.
@@ -118,18 +118,23 @@ def clean_transcribed_value(
     Args:
         raw_text: Raw transcribed text (may be in Hindi or mixed language)
         field_label: The form field label (e.g., "Date of Birth", "Phone Number")
-        api_base: OpenAI-compatible API base URL
-        api_key: API key for the LLM provider
-        model: Model to use for cleaning
+        api_base: Override for API base URL (defaults to env config)
+        api_key: Override for API key (defaults to env config)
+        model: Override for model (defaults to env config)
     
     Returns:
         Cleaned and formatted value in English
     """
+    from openai import OpenAI
+    from utils.config import OPENROUTER_API_BASE, OPENROUTER_API_KEY, OPENROUTER_MODEL
+
+    api_base = api_base or OPENROUTER_API_BASE
+    api_key = api_key or OPENROUTER_API_KEY
+    model = model or OPENROUTER_MODEL
+
     if not api_key or not raw_text.strip():
         return raw_text
-    
-    from openai import OpenAI
-    
+
     client = OpenAI(base_url=api_base, api_key=api_key)
     
     prompt = f"""You are a form-filling assistant. Clean and format the following spoken/transcribed input for a form field.

@@ -3,25 +3,35 @@ import json
 import os
 from openai import OpenAI
 
+from utils.config import (
+    OPENROUTER_API_BASE,
+    OPENROUTER_API_KEY,
+    OPENROUTER_VISION_MODEL,
+)
+
+
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
 
-def detect_form_fields(image_path, api_base="https://openrouter.ai/api/v1", api_key=None, model="qwen/qwen3-vl-235b-a22b-instruct"):
+
+def detect_form_fields(image_path, api_base=None, api_key=None, model=None):
     """
-    Sends the image to an OpenAI-compatible LLM (e.g., OpenRouter) to detect form fields.
+    Sends the image to OpenRouter to detect form fields.
     Returns a list of dicts: {'label': str, 'box_2d': [x1, y1, x2, y2]}
     Coordinates are normalized 0-1000.
     """
-    
-    # Clean up the path if it starts with file://
+    api_base = api_base or OPENROUTER_API_BASE
+    api_key = api_key or OPENROUTER_API_KEY
+    model = model or OPENROUTER_VISION_MODEL
+
     if image_path.startswith("file://"):
         image_path = image_path.replace("file://", "")
 
     base64_image = encode_image(image_path)
 
     if not api_key:
-        print("Warning: No API Key provided.")
+        print("Warning: No OPENROUTER_API_KEY configured.")
         return []
 
     client = OpenAI(base_url=api_base, api_key=api_key)

@@ -5,44 +5,43 @@ import base64
 from utils.pdf_processor import pdf_to_images, overlay_text, draw_bounding_boxes
 from utils.llm_helper import detect_form_fields
 from utils.sarvam_helper import speak_text, transcribe_audio_bytes, clean_transcribed_value
+from utils.config import OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_VISION_MODEL, SARVAM_API_KEY
 
 st.set_page_config(page_title="PDF Form Filler (Voice Enabled)", layout="wide")
 
 st.title("🤖 AI PDF Form Filler with Voice")
 st.markdown("Upload a PDF, let AI find the blanks, fill them in using **voice** or text, and download the result!")
 
-# Sidebar for Configuration
+sarvam_api_key = SARVAM_API_KEY
+
 with st.sidebar:
-    st.header("🔧 LLM Settings")
-    api_base = st.text_input("API Base URL", value="https://openrouter.ai/api/v1", help="URL of the LLM Provider")
-    api_key = st.text_input("OpenRouter API Key", type="password", help="Your OpenRouter or provider API Key")
-    model_name = st.text_input("Model Name", value="qwen/qwen3-vl-235b-a22b-instruct", help="Model ID (e.g., qwen/qwen3-vl-235b-a22b-instruct)")
-    
+    st.header("⚙️ Configuration")
+    st.caption(f"**Model:** `{OPENROUTER_MODEL}`")
+    if OPENROUTER_VISION_MODEL != OPENROUTER_MODEL:
+        st.caption(f"**Vision model:** `{OPENROUTER_VISION_MODEL}`")
+    if not OPENROUTER_API_KEY:
+        st.warning("OPENROUTER_API_KEY is not set in .env")
+
     st.divider()
-    
-    st.header("🎤 Sarvam AI Settings")
-    sarvam_api_key = st.text_input(
-        "Sarvam API Key", 
-        type="password", 
-        value=os.environ.get("SARVAM_API_KEY", ""),
-        help="Your Sarvam AI API Key for voice features. Get one at dashboard.sarvam.ai"
-    )
-    
+
+    st.header("🎤 Voice Settings")
+
     voice_language = st.selectbox(
         "Voice Language",
         options=["hi-IN", "en-IN", "ta-IN", "te-IN", "kn-IN", "ml-IN", "mr-IN", "bn-IN", "gu-IN", "pa-IN"],
         index=0,
         help="Language for Text-to-Speech and Speech-to-Text (default: Hindi)"
     )
-    
+
     voice_speaker = st.selectbox(
         "TTS Voice",
         options=["anushka", "manisha", "vidya", "arya", "priya", "neha", "kavya", "abhilash", "karun", "hitesh", "rahul", "amit", "dev"],
         index=0,
         help="Voice for Text-to-Speech"
     )
-    
-    st.info("💡 Enable Voice Fill Mode to fill forms by speaking!")
+
+    if not sarvam_api_key:
+        st.info("Set SARVAM_API_KEY in .env to enable voice features.")
 
 uploaded_file = st.file_uploader("Upload a PDF", type=["pdf"])
 
@@ -77,7 +76,7 @@ def get_all_fields_flat():
             all_fields.append(field_copy)
     return all_fields
 
-if uploaded_file and api_base:
+if uploaded_file and OPENROUTER_API_KEY:
     # Save uploaded file to temp
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         tmp.write(uploaded_file.getvalue())
@@ -102,7 +101,7 @@ if uploaded_file and api_base:
                         img_path = img_tmp.name
                     
                     # Call LLM
-                    fields = detect_form_fields(img_path, api_base=api_base, api_key=api_key, model=model_name)
+                    fields = detect_form_fields(img_path)
                     
                     st.session_state.form_data[i] = fields
                     progress_bar.progress((i + 1) / len(images))
@@ -195,8 +194,6 @@ if uploaded_file and api_base:
                                             cleaned_value = clean_transcribed_value(
                                                 raw_text=raw_transcript,
                                                 field_label=field_label,
-                                                api_base=api_base,
-                                                api_key=api_key
                                             )
                                             
                                             st.session_state.voice_field_values[current_idx] = cleaned_value
