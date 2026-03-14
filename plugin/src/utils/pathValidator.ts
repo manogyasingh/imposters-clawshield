@@ -1,4 +1,5 @@
 import { resolve, normalize } from "node:path";
+import { statSync } from "node:fs";
 
 let workspaceRoot = "";
 
@@ -29,18 +30,31 @@ function ensureUnder(filePath: string, ...allowedDirs: string[]): string {
   );
 }
 
+function ensureExistingFile(filePath: string): string {
+  let stat;
+  try {
+    stat = statSync(filePath);
+  } catch {
+    throw new Error(`Path "${filePath}" does not exist`);
+  }
+  if (!stat.isFile()) {
+    throw new Error(`Path "${filePath}" is not a file`);
+  }
+  return filePath;
+}
+
 export function validateInboxPath(filePath: string): string {
-  return ensureUnder(
+  return ensureExistingFile(ensureUnder(
     filePath,
     resolve(workspaceRoot, "forms", "inbox"),
-  );
+  ));
 }
 
 export function validateProfilePath(filePath: string): string {
-  return ensureUnder(
+  return ensureExistingFile(ensureUnder(
     filePath,
     resolve(workspaceRoot, "data", "profile"),
-  );
+  ));
 }
 
 export function validateStagedPath(filePath: string): string {

@@ -1,5 +1,5 @@
 {
-  "name": "@clawshield/plugin",
+  "name": "clawshield",
   "version": "1.0.0",
   "description": "ClawShield OpenClaw plugin — intent-aware PDF form filling with policy enforcement",
   "type": "module",

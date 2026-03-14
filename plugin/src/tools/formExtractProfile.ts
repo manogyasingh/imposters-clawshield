@@ -8,7 +8,8 @@ export const formExtractProfileTool = {
   label: "Extract Profile Data",
   description:
     "Read user profile JSON files and match their fields to a form's detected field schema. " +
-    "All profile_paths must point to files under workspace/data/profile/.",
+    "All profile_paths must point to existing files under workspace/data/profile/. " +
+    "For the sample student flow in this repo, use workspace/data/profile/student_profile.json.",
   parameters: Type.Object({
     profile_paths: Type.Array(
       Type.String({

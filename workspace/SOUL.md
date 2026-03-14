@@ -37,7 +37,7 @@ Present this intent to the user for confirmation before proceeding.
 Your standard workflow is:
 
 1. **Detect Fields** — Call `form_detect_fields` with the PDF from `workspace/forms/inbox/`
-2. **Extract Profile** — Call `form_extract_profile_data` with profile JSONs from `workspace/data/profile/` and the detected field schema
+2. **Extract Profile** — Call `form_extract_profile_data` with profile JSONs from `workspace/data/profile/` and the detected field schema. For the sample student flow in this repo, use `workspace/data/profile/student_profile.json` (or the compatible alias `workspace/data/profile/student.json`).
 3. **Fill PDF** — Call `form_fill_pdf` with the original PDF and matched field values. Output goes to `workspace/forms/staged/`
 4. **Save Output** — Call `form_save_output` to copy the staged PDF to `workspace/forms/outbox/`
 

@@ -47,11 +47,98 @@ cd ~/openclaw-armoriq
 node openclaw.mjs plugins install -l /home/mano/Desktop/claw-shield/plugin
 ```
 
-The OpenClaw config at `~/.openclaw/openclaw.json` is already wired to load the plugin and ArmorClaw.
+### 5. Verify `~/.openclaw/openclaw.json`
+
+Your OpenClaw config must contain the ClawShield plugin entry, the ArmorClaw entry, and a longer ArmorIQ intent-token lifetime.
+
+The important fields are:
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "model": "openrouter/hunter-alpha",
+      "imageModel": "qwen/qwen3-vl-235b-a22b-instruct",
+      "workspace": "/home/mano/Desktop/claw-shield/workspace"
+    }
+  },
+  "gateway": {
+    "mode": "local"
+  },
+  "plugins": {
+    "allow": ["clawshield", "armorclaw"],
+    "load": {
+      "paths": ["/home/mano/Desktop/claw-shield/plugin"]
+    },
+    "entries": {
+      "clawshield": {
+        "enabled": true,
+        "config": {
+          "workerUrl": "http://127.0.0.1:8100",
+          "workspacePath": "/home/mano/Desktop/claw-shield/workspace"
+        }
+      },
+      "armorclaw": {
+        "enabled": true,
+        "config": {
+          "enabled": true,
+          "apiKey": "${ARMORIQ_API_KEY}",
+          "policyStorePath": "/home/mano/Desktop/claw-shield/workspace/armorclaw-policy.json",
+          "policyUpdateEnabled": true,
+          "validitySeconds": 300
+        }
+      }
+    }
+  }
+}
+```
+
+`validitySeconds: 300` matters: the default 60-second ArmorIQ token lifetime is too short for the PDF vision step on this project.
+
+Validate after editing:
+
+```bash
+cd ~/openclaw-armoriq
+node openclaw.mjs config validate
+```
 
 ## Running the Happy Path
 
+### Fast path
+
+If you just want everything started for you and to land in the OpenClaw TUI:
+
+```bash
+cd /home/mano/Desktop/claw-shield
+./run.sh
+```
+
+Optional arguments are passed straight through to `node openclaw.mjs tui`, for example:
+
+```bash
+./run.sh --message "Fill the test form using my student profile"
+```
+
+`run.sh` will:
+
+- load `.env`
+- create the Python venv if missing
+- install Python deps if needed
+- install/build the plugin if needed
+- write the ArmorClaw policy file
+- normalize `~/.openclaw/openclaw.json`
+- start the worker and gateway if they are not already running
+- open the TUI in the current terminal
+
+### Manual path
+
 You need **two terminals** running simultaneously, then a third to talk to the agent.
+
+The sample assets already included in this repo are:
+
+- `workspace/forms/inbox/test_form.pdf`
+- `workspace/data/profile/student.json`
+- `workspace/data/profile/student_profile.json`
 
 ### Terminal 1 — Python Worker
 
@@ -85,14 +172,18 @@ Wait until you see:
 ClawShield plugin loaded — worker=http://127.0.0.1:8100  workspace=...
 ```
 
+If you changed `~/.openclaw/openclaw.json`, restart the gateway after the edit.
+
 ### Terminal 3 — Send a message
 
 Option A — single-shot agent run:
 
 ```bash
 cd ~/openclaw-armoriq
-node openclaw.mjs agent --message "Fill the test form using my student profile"
+node openclaw.mjs agent --agent main --message "Fill the test form using my student profile"
 ```
+
+Recent OpenClaw builds require an explicit target via `--agent`, `--session-id`, or `--to`.
 
 Option B — interactive TUI:
 
@@ -107,7 +198,7 @@ Then type: `Fill the test form using my student profile`
 
 1. Agent parses your request into a structured **intent object**
 2. `form_detect_fields` — analyzes `workspace/forms/inbox/test_form.pdf` via the vision model
-3. `form_extract_profile_data` — matches `workspace/data/profile/student_profile.json` to detected fields
+3. `form_extract_profile_data` — matches `workspace/data/profile/student.json` (or `student_profile.json`) to detected fields
 4. `form_fill_pdf` — overlays values onto the PDF, saves to `workspace/forms/staged/`
 5. `form_save_output` — copies the filled PDF to `workspace/forms/outbox/`
 
@@ -120,6 +211,8 @@ ls workspace/forms/outbox/
 # Trace logs:
 cat workspace/logs/trace-*.jsonl
 ```
+
+If `test_form_filled.pdf` already exists, the next successful run will save `test_form_filled_2.pdf`, `test_form_filled_3.pdf`, and so on.
 
 ## Project Structure
 
@@ -156,6 +249,8 @@ claw-shield/
 |---------|-----|
 | `Connection refused` on port 8100 | Terminal 1 isn't running — start the worker |
 | `plugin not found: clawshield` | Rebuild plugin (`cd plugin && npm run build`) and re-run `plugins install` |
+| `ArmorIQ intent token expired` | Set `plugins.entries.armorclaw.config.validitySeconds` to `300` in `~/.openclaw/openclaw.json`, then restart the gateway |
+| `Planner returned invalid JSON` from ArmorClaw | Update/rebuild your ArmorClaw install; older local builds may fail when the planner returns fenced JSON |
 | No fields detected | Check worker terminal for vision model errors; verify `OPENROUTER_VISION_MODEL` in `.env` |
 | Profile values not matching | Field labels from the vision model may differ from the alias map in `worker/profile_extractor.py` — add aliases as needed |
 | Config validation fails | Run `cd ~/openclaw-armoriq && node openclaw.mjs config validate` and fix reported keys |

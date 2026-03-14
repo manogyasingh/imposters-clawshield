@@ -41,16 +41,32 @@ def _normalize(s: str) -> str:
     return re.sub(r"[^a-z0-9 ]", "", s.lower()).strip()
 
 
+def _contains_alias_phrase(field_label: str, alias: str) -> bool:
+    haystack = f" {field_label} "
+    needle = f" {alias} "
+    return needle in haystack
+
+
 def _best_profile_key(field_label: str, profile_keys: list[str]) -> str | None:
     """Return the best matching profile key for a given field label."""
     norm_label = _normalize(field_label)
 
+    alias_phrase_matches: list[tuple[int, str]] = []
     for key, aliases in ALIAS_MAP.items():
         if key not in profile_keys:
             continue
         for alias in aliases:
-            if _normalize(alias) in norm_label or norm_label in _normalize(alias):
+            norm_alias = _normalize(alias)
+            if not norm_alias:
+                continue
+            if norm_alias == norm_label:
                 return key
+            if _contains_alias_phrase(norm_label, norm_alias):
+                alias_phrase_matches.append((len(norm_alias), key))
+
+    if alias_phrase_matches:
+        alias_phrase_matches.sort(reverse=True)
+        return alias_phrase_matches[0][1]
 
     best_key, best_score = None, 0.0
     for key in profile_keys:

@@ -8,7 +8,7 @@ Run: uvicorn worker.server:app --host 127.0.0.1 --port 8100
 import os
 import sys
 import tempfile
-import shutil
+import json
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -27,6 +27,25 @@ WORKSPACE_ROOT = Path(os.environ.get(
     "CLAWSHIELD_WORKSPACE",
     Path(__file__).resolve().parent.parent / "workspace",
 ))
+DETECT_FIELDS_CACHE: dict[tuple[str, int, int], list[dict]] = {}
+EXTRACT_PROFILE_CACHE: dict[str, dict] = {}
+
+
+def _file_signature(path: Path) -> tuple[str, int, int]:
+    resolved = str(path.resolve())
+    if not path.exists():
+        return (resolved, -1, 0)
+    stat = path.stat()
+    return (resolved, stat.st_mtime_ns, stat.st_size)
+
+
+def _extract_profile_cache_key(profile_paths: list[str], field_schema: list[dict]) -> str:
+    profile_signatures = [_file_signature(Path(path)) for path in profile_paths]
+    payload = {
+        "profile_signatures": profile_signatures,
+        "field_schema": field_schema,
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
 
 class DetectFieldsRequest(BaseModel):
@@ -59,6 +78,11 @@ async def detect_fields_endpoint(req: DetectFieldsRequest):
     if not pdf_path.is_file():
         raise HTTPException(status_code=404, detail=f"PDF not found: {req.pdf_path}")
 
+    cache_key = _file_signature(pdf_path)
+    cached_fields = DETECT_FIELDS_CACHE.get(cache_key)
+    if cached_fields is not None:
+        return {"fields": cached_fields}
+
     try:
         images = pdf_to_images(str(pdf_path))
     except Exception as e:
@@ -78,13 +102,20 @@ async def detect_fields_endpoint(req: DetectFieldsRequest):
         finally:
             os.unlink(tmp_path)
 
+    DETECT_FIELDS_CACHE[cache_key] = all_fields
     return {"fields": all_fields}
 
 
 @app.post("/extract-profile")
 async def extract_profile_endpoint(req: ExtractProfileRequest):
+    cache_key = _extract_profile_cache_key(req.profile_paths, req.field_schema)
+    cached_result = EXTRACT_PROFILE_CACHE.get(cache_key)
+    if cached_result is not None:
+        return cached_result
+
     try:
         result = extract_profile_data(req.profile_paths, req.field_schema)
+        EXTRACT_PROFILE_CACHE[cache_key] = result
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Profile extraction error: {e}")
